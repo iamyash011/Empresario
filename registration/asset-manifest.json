@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/EmpresarioRegPage/static/css/main.e0580dbf.css",
+    "main.js": "/EmpresarioRegPage/static/js/main.17e436e7.js",
+    "static/js/453.4e2d74e4.chunk.js": "/EmpresarioRegPage/static/js/453.4e2d74e4.chunk.js",
+    "static/media/event-bg.jpg": "/EmpresarioRegPage/static/media/event-bg.263b897006e69e7f1400.jpg",
+    "index.html": "/EmpresarioRegPage/index.html",
+    "main.e0580dbf.css.map": "/EmpresarioRegPage/static/css/main.e0580dbf.css.map",
+    "main.17e436e7.js.map": "/EmpresarioRegPage/static/js/main.17e436e7.js.map",
+    "453.4e2d74e4.chunk.js.map": "/EmpresarioRegPage/static/js/453.4e2d74e4.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e0580dbf.css",
+    "static/js/main.17e436e7.js"
+  ]
+}
