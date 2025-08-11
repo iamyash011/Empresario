@@ -551,8 +551,17 @@
     </div>
 
     <script>
-        // Backend base. If you deploy backend on a different domain, set window.API_BASE
+        // Backend base.
+        // If your API is hosted on a different domain, set it before this script loads:
+        // <script>window.API_BASE = 'https://your-api.example.com'<\/script>
+        // Otherwise, leave blank to use same-origin.
         const API_BASE = (window.API_BASE && window.API_BASE.replace(/\/$/, '')) || '';
+        
+        // REQUIRED: Configure backend credentials in server/.env
+        // - CORS_ORIGINS: comma-separated list of allowed front-end origins (e.g. https://your-site.github.io)
+        // - EMAIL: set EMAIL_PROVIDER and its credentials (SMTP or SENDGRID) and EMAIL_FROM
+        // - GOOGLE: set GOOGLE_CREDENTIALS_JSON_BASE64 (or GOOGLE_APPLICATION_CREDENTIALS) and SPREADSHEET_ID
+        // See server/.env.example for details.
         
         let otpVerified = false;
         let currentStep = 1;
