@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Block & Ball — Bouncy Arcade</title>
+  <style>
+    :root{
+      --bg1:#0f1724; --bg2:#1e293b; --accent:#ff6b6b; --glass: rgba(255,255,255,0.06);
+      --card-radius:16px;
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      background: radial-gradient( circle at 10% 20%, #071126 0%, var(--bg1) 20%, var(--bg2) 100% );
+      display:flex; align-items:center; justify-content:center; color:#e6eef8;
+    }
+    .wrap{
+      width:min(980px, 96%);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border-radius:var(--card-radius);
+      padding:18px; box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+      display:grid; grid-template-columns: 1fr 320px; gap:18px; align-items:center;
+    }
+    header{grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; gap:12px}
+    h1{font-size:18px; margin:0}
+    .sub{color:#9fb3d6; font-size:13px}
+    /* canvas area */
+    .game-area{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; padding:12px}
+    canvas{display:block; width:100%; height:560px; background: linear-gradient(180deg, rgba(0,0,0,0.2), rgba(5,10,20,0.2)), repeating-linear-gradient(45deg, rgba(255,255,255,0.01) 0 2px, transparent 2px 10px); border-radius:10px}
+    /* side panel */
+    .panel{padding:14px; border-radius:10px; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));}
+    .panel .row{display:flex; justify-content:space-between; margin-bottom:10px}
+    .btn{display:inline-block;background:var(--accent); color:white; padding:10px 12px;border-radius:8px;cursor:pointer;border:none;font-weight:600}
+    .muted{color:#9fb3d6; font-size:13px}
+    .controls{display:flex; gap:8px; margin-top:12px}
+    .footer{grid-column:1/-1; text-align:center; font-size:12px; color:#9fb3d6; margin-top:6px}
+    @media (max-width:900px){
+      .wrap{grid-template-columns:1fr}
+      canvas{height:420px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Block & Ball — Bouncy Arcade</h1>
+        <div class="sub">Use arrow keys or mouse to move the paddle. Break every block!</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="muted">Lives: <span id="ui-lives">3</span></div>
+        <div class="muted">Score: <span id="ui-score">0</span></div>
+        <button id="startBtn" class="btn">Start</button>
+      </div>
+    </header>
+
+    <div class="game-area">
+      <canvas id="gameCanvas" width="860" height="560"></canvas>
+    </div>
+
+    <aside class="panel">
+      <div class="row"><div class="muted">Level</div><div id="ui-level">1</div></div>
+      <div class="row"><div class="muted">Blocks left</div><div id="ui-blocks">0</div></div>
+      <div class="row"><div class="muted">Ball speed</div><div id="ui-speed">Normal</div></div>
+
+      <div style="margin-top:12px">
+        <div class="muted">Controls</div>
+        <div class="controls">
+          <div class="muted">← →</div>
+          <div class="muted">Mouse</div>
+          <div class="muted">Space: Pause</div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px; display:flex; gap:8px; flex-direction:column">
+        <button id="nextLevelBtn" class="btn" style="background:#4ade80">Next Level</button>
+        <button id="resetBtn" class="btn" style="background:#7c3aed">Reset</button>
+      </div>
+
+      <div style="margin-top:12px" class="muted">Tip: catch power-ups to grow paddle or slow ball.</div>
+    </aside>
+
+    <div class="footer">Made for you — press Start. Enjoy. 🎮</div>
+  </div>
+
+<script>
+// Block & Ball — simple breakout-style game
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let W = canvas.width, H = canvas.height;
+
+// UI
+const uiLives = document.getElementById('ui-lives');
+const uiScore = document.getElementById('ui-score');
+const uiLevel = document.getElementById('ui-level');
+const uiBlocks = document.getElementById('ui-blocks');
+const uiSpeed = document.getElementById('ui-speed');
+
+// Buttons
+const startBtn = document.getElementById('startBtn');
+const resetBtn = document.getElementById('resetBtn');
+const nextLevelBtn = document.getElementById('nextLevelBtn');
+
+// Game state
+let paddle, ball, blocks, powerups;
+let score = 0, lives = 3, level = 1;
+let running = false, paused = false;
+let keys = {};
+let mouseX = null;
+
+// Helper
+function rand(a,b){return Math.random()*(b-a)+a}
+
+// Entities
+function createPaddle(){
+  return {w:140, h:14, x:(W-140)/2, y:H-40, speed:10, grow:1};
+}
+function createBall(){
+  return {r:9, x:W/2, y:H-80, vx: rand(-2.5,2.5) || 2.5, vy:-4, stuck:true};
+}
+
+function buildBlocks(level){
+  const rows = Math.min(6, 3 + Math.floor(level/1.2));
+  const cols = 10;
+  const margin = 40; const bw = (W - margin*2 - (cols-1)*8)/cols; const bh = 20;
+  const arr = [];
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const x = margin + c*(bw+8);
+      const y = 60 + r*(bh+8);
+      // random hitpoints or special
+      const hp = (r%3===0)?2:1;
+      arr.push({x,y,w:bw,h:bh,hp,alive:true, colorIndex:r%6});
+    }
+  }
+  return arr;
+}
+
+function reset(fullReset=true){
+  paddle = createPaddle();
+  ball = createBall();
+  blocks = buildBlocks(level);
+  powerups = [];
+  if(fullReset){ score=0; lives=3; level=1}
+  updateUI();
+}
+
+function updateUI(){
+  uiLives.textContent = lives;
+  uiScore.textContent = score;
+  uiLevel.textContent = level;
+  uiBlocks.textContent = blocks.filter(b=>b.alive).length;
+  uiSpeed.textContent = Math.abs(ball.vy).toFixed(2);
+}
+
+// Collisions
+function rectCircleCollide(circle, rect){
+  const distX = Math.abs(circle.x - rect.x-rect.w/2);
+  const distY = Math.abs(circle.y - rect.y-rect.h/2);
+  if (distX > (rect.w/2 + circle.r)) return false;
+  if (distY > (rect.h/2 + circle.r)) return false;
+  if (distX <= (rect.w/2)) return true;
+  if (distY <= (rect.h/2)) return true;
+  const dx = distX-rect.w/2; const dy = distY-rect.h/2;
+  return (dx*dx + dy*dy <= circle.r*circle.r);
+}
+
+// Draw helpers
+function drawRoundedRect(x,y,w,h,r){
+  ctx.beginPath(); ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  ctx.fill();
+}
+
+function draw(){
+  // clear
+  ctx.clearRect(0,0,W,H);
+
+  // background glow
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'rgba(255,255,255,0.02)'); g.addColorStop(1,'rgba(0,0,0,0.12)');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+  // blocks
+  blocks.forEach(b=>{
+    if(!b.alive) return;
+    const colors = ['#60a5fa','#34d399','#fbbf24','#fb7185','#a78bfa','#f97316'];
+    ctx.save();
+    ctx.fillStyle = colors[b.colorIndex%colors.length];
+    ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 12;
+    drawRoundedRect(b.x, b.y, b.w, b.h, 6);
+    ctx.restore();
+
+    // hp overlay
+    if(b.hp>1){ ctx.fillStyle='rgba(0,0,0,0.16)'; ctx.font='12px Arial'; ctx.textAlign='center'; ctx.fillText('HP '+b.hp, b.x + b.w/2, b.y + b.h/1.6);
+    }
+  });
+
+  // paddle
+  ctx.save(); ctx.fillStyle='#e2e8f0'; ctx.shadowBlur=10; ctx.shadowColor='rgba(226,232,240,0.6)';
+  drawRoundedRect(paddle.x, paddle.y, paddle.w * paddle.grow, paddle.h, 8);
+  ctx.restore();
+
+  // ball
+  ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
+  ctx.fillStyle = '#ff6b6b'; ctx.shadowBlur=16; ctx.shadowColor='rgba(255,107,107,0.8)'; ctx.fill();
+
+  // powerups
+  powerups.forEach(p=>{ if(!p.alive) return; ctx.fillStyle='#34d399'; ctx.beginPath(); ctx.arc(p.x,p.y,8,0,Math.PI*2); ctx.fill(); });
+}
+
+function step(){
+  if(!running || paused) return;
+
+  // paddle movement - keys
+  if(keys['ArrowLeft']) paddle.x -= paddle.speed;
+  if(keys['ArrowRight']) paddle.x += paddle.speed;
+  if(mouseX !== null){
+    // smooth follow mouse
+    const target = mouseX - (paddle.w*paddle.grow)/2;
+    paddle.x += (target - paddle.x) * 0.2;
+  }
+  // clamp
+  paddle.x = Math.max(8, Math.min(W - paddle.w*paddle.grow - 8, paddle.x));
+
+  // ball physics
+  if(ball.stuck){
+    ball.x = paddle.x + (paddle.w*paddle.grow)/2;
+    ball.y = paddle.y - 12;
+  } else {
+    ball.x += ball.vx; ball.y += ball.vy;
+
+    // wall collisions
+    if(ball.x - ball.r < 0){ ball.x = ball.r; ball.vx *= -1; }
+    if(ball.x + ball.r > W){ ball.x = W - ball.r; ball.vx *= -1; }
+    if(ball.y - ball.r < 0){ ball.y = ball.r; ball.vy *= -1; }
+
+    // paddle collision
+    const paddleRect = {x:paddle.x,y:paddle.y,w:paddle.w*paddle.grow,h:paddle.h};
+    if(rectCircleCollide(ball, paddleRect) && ball.vy>0){
+      // reflect with angle based on hit point
+      const hitPos = (ball.x - (paddle.x + (paddle.w*paddle.grow)/2)) / ((paddle.w*paddle.grow)/2);
+      const maxAngle = Math.PI/3; // 60deg
+      const angle = hitPos * maxAngle;
+      const speed = Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy);
+      ball.vx = speed * Math.sin(angle);
+      ball.vy = -Math.abs(speed * Math.cos(angle));
+      // small speed up
+      ball.vx *= 1.02; ball.vy *= 1.02;
+    }
+
+    // blocks collision
+    blocks.forEach(b=>{
+      if(!b.alive) return;
+      if(rectCircleCollide(ball, b)){
+        // simple reflect: determine side
+        // compute penetration vector
+        const prevX = ball.x - ball.vx;
+        const prevY = ball.y - ball.vy;
+        let collidedSide = null;
+        if(prevY + ball.r <= b.y) collidedSide = 'top';
+        else if(prevY - ball.r >= b.y + b.h) collidedSide = 'bottom';
+        else if(prevX + ball.r <= b.x) collidedSide = 'left';
+        else if(prevX - ball.r >= b.x + b.w) collidedSide = 'right';
+
+        if(collidedSide==='left' || collidedSide==='right') ball.vx *= -1; else ball.vy *= -1;
+
+        // damage block
+        b.hp -=1; if(b.hp<=0){ b.alive=false; score += 100; // chance spawn powerup
+          if(Math.random()<0.12){ powerups.push({x:b.x+b.w/2, y:b.y+b.h/2, vy:1.2, type: 'grow', alive:true}); }
+        } else { score += 40; }
+
+      }
+    });
+
+    // powerups update
+    powerups.forEach(p=>{
+      if(!p.alive) return;
+      p.y += p.vy;
+      // catch by paddle
+      if(p.y > paddle.y && p.y < paddle.y + 40 && p.x > paddle.x && p.x < paddle.x + paddle.w*paddle.grow){
+        p.alive = false;
+        // apply
+        if(p.type==='grow'){ paddle.grow = Math.min(2.4, paddle.grow + 0.35); setTimeout(()=>{ paddle.grow = Math.max(1, paddle.grow - 0.35); }, 10000); }
+      }
+      if(p.y > H+20) p.alive = false;
+    });
+
+    // ball fell below
+    if(ball.y - ball.r > H){
+      lives -=1;
+      if(lives<=0){ running=false; alert('Game Over! Score: '+score); }
+      else { ball = createBall(); ball.stuck = true; }
+    }
+  }
+
+  // launch ball when space or up pressed
+  if(keys[' ']){ if(ball.stuck) { ball.stuck=false; ball.vx = rand(-3,3); ball.vy = -4.5; } }
+
+  // check win
+  if(blocks.every(b=>!b.alive)){
+    running=false;
+    alert('Level cleared!');
+    level +=1; // increase difficulty
+    // increase ball speed
+    ball.vx *= 1.15; ball.vy *= 1.15;
+  }
+
+  updateUI();
+}
+
+function loop(){ step(); draw(); requestAnimationFrame(loop); }
+
+// Input handlers
+window.addEventListener('keydown', e=>{ keys[e.key]=true; if(e.key===' ') e.preventDefault(); if(e.key==='p' || e.key==='P') paused = !paused; if(e.key==='ArrowUp'){ if(ball.stuck) { ball.stuck=false; ball.vx = rand(-2.5,2.5); ball.vy = -4; } } });
+window.addEventListener('keyup', e=>{ keys[e.key]=false; });
+canvas.addEventListener('mousemove', e=>{ const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; mouseX = (e.clientX - rect.left) * scaleX; });
+canvas.addEventListener('mouseleave', ()=>{ mouseX = null; });
+canvas.addEventListener('click', ()=>{ if(ball.stuck) { ball.stuck=false; ball.vx = rand(-2.5,2.5); ball.vy = -4; } });
+
+// Buttons
+startBtn.addEventListener('click', ()=>{ running = true; paused=false; ball.stuck=true; });
+resetBtn.addEventListener('click', ()=>{ level=1; reset(true); running=false; });
+nextLevelBtn.addEventListener('click', ()=>{ level +=1; reset(false); });
+
+// responsive canvas on window resize
+function fitCanvas(){ const rect = canvas.getBoundingClientRect(); // preserve internal resolution
+  // we keep internal resolution fixed but scale via CSS to remain crisp — keep as is
+}
+window.addEventListener('resize', fitCanvas);
+
+// initialize
+reset(true);
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>

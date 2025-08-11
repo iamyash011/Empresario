@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empresario Event Registration</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-image: url('images/bg.jpg');
+            background-size: cover;         /* makes it cover the entire screen */
+            background-position: center;    /* centers the image */
+            background-repeat: no-repeat;   /* prevents tiling */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            /* background: linear-gradient(135deg, #080c2b 0%, #251337 100%); */
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;    
+
+        }
+
+        /* Organization Logo */
+        .logo-container {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .logo-container img {
+            /* width: 269px; */
+            /* height: 74px; */
+            max-height: 50px;
+
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logo i {
+            font-size: 24px;
+            color: white;
+        }
+
+        .logo-text {
+            color: white;
+        }
+
+        .logo-text h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .logo-text p {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* Main Container */
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #fff 0%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+        }
+
+        /* Progress Steps */
+        .progress-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 40px;
+            gap: 16px;
+        }
+
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .step.active {
+            background: #4f46e5;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .step.completed {
+            background: #10b981;
+            color: white;
+        }
+
+        .step-line {
+            width: 40px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .step-line.completed {
+            background: #10b981;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .input-container {
+            position: relative;
+        }
+
+        .input-container i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 18px;
+        }
+
+        input[type="text"], input[type="email"] {
+            width: 100%;
+            padding: 16px 16px 16px 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        input[type="text"]:focus, input[type="email"]:focus {
+            outline: none;
+            border-color: #4f46e5;
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* OTP Input */
+        #otpInput {
+            text-align: center;
+            font-size: 24px;
+            letter-spacing: 8px;
+            padding-left: 16px;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn-group .btn {
+            flex: 1;
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-message.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-message.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .status-message.show {
+            display: flex;
+        }
+
+        /* OTP Section */
+        #otpSection {
+            display: none;
+        }
+
+        #otpSection.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        /* Success Section */
+        .success-section {
+            text-align: center;
+            display: none;
+        }
+
+        .success-section.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(16, 185, 129, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+
+        .success-icon i {
+            font-size: 40px;
+            color: #10b981;
+        }
+
+        .success-section h2 {
+            color: white;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .success-section p {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 24px;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Animations */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+
+            .logo-container {
+                top: 20px;
+                left: 20px;
+            }
+
+            .logo {
+                width: 40px;
+                height: 40px;
+            }
+
+            .logo i {
+                font-size: 20px;
+            }
+
+            .logo-text h3 {
+                font-size: 16px;
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+
+        /* Resend OTP Link */
+        .resend-link {
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .resend-link a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: underline;
+            font-size: 14px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .resend-link a:hover {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Organization Logo -->
+    <div class="logo-container">
+        <img src="images/ecell-logo(white).png" alt="">
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Empresario</h1>
+            <p>Register for an exclusive business event experience</p>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="progress-container">
+            <div class="step active" id="step1">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="step-line" id="line1"></div>
+            <div class="step" id="step2">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="step-line" id="line2"></div>
+            <div class="step" id="step3">
+                <i class="fas fa-check-circle"></i>
+            </div>
+        </div>
+
+        <!-- Status Message -->
+        <div class="status-message" id="statusMessage">
+            <i class="fas fa-info-circle"></i>
+            <span id="statusText"></span>
+        </div>
+
+        <!-- Registration Form -->
+        <form id="myForm">
+            <!-- Step 1: Basic Information -->
+            <div id="basicInfo">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <div class="input-container">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="name" id="name" placeholder="Enter your full name" required />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="emailInput">Email Address</label>
+                    <div class="input-container">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" name="email" id="emailInput" placeholder="Enter your email address" required />
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-primary" id="sendOtpBtn">
+                    <span>Send OTP</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+
+            <!-- Step 2: OTP Verification -->
+            <div id="otpSection">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <h3 style="color: white; margin-bottom: 8px;">Verify Your Email</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 14px;">We've sent a 6-digit code to</p>
+                    <p style="color: #4f46e5; font-weight: 600;" id="emailDisplay"></p>
+                </div>
+
+                <div class="form-group">
+                    <label for="otpInput">Enter OTP</label>
+                    <div class="input-container">
+                        <input type="text" id="otpInput" placeholder="000000" maxlength="6" />
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" id="backBtn">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back</span>
+                    </button>
+                    <button type="button" class="btn btn-success" id="verifyOtpBtn">
+                        <span>Verify</span>
+                        <i class="fas fa-check"></i>
+                    </button>
+                </div>
+
+                <div class="resend-link">
+                    <a id="resendOtp">Didn't receive the code? Resend OTP</a>
+                </div>
+            </div>
+
+            <!-- Step 3: Success -->
+            <div class="success-section" id="successSection">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2>Registration Successful!</h2>
+                <p>Welcome to Empresario! You'll receive event details at your email address.</p>
+                <button type="button" class="btn btn-primary" id="registerAnotherBtn">
+                    Register Another Person
+                </button>
+            </div>
+
+            <button type="submit" id="submitBtn" style="display: none;" disabled>Submit</button>
+        </form>
+    </div>
+
+    <script>
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbzdGTXsuajqHwckQwDD4hayyyA3P3KWYs4vW63hNRfSPj0c-UsqW80Zg-QBotatHlgc-Q/exec';
+        
+        let otpVerified = false;
+        let currentStep = 1;
+        
+        // DOM Elements
+        const sendOtpBtn = document.getElementById('sendOtpBtn');
+        const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+        const backBtn = document.getElementById('backBtn');
+        const resendOtp = document.getElementById('resendOtp');
+        const registerAnotherBtn = document.getElementById('registerAnotherBtn');
+        const otpSection = document.getElementById('otpSection');
+        const basicInfo = document.getElementById('basicInfo');
+        const successSection = document.getElementById('successSection');
+        const statusMessage = document.getElementById('statusMessage');
+        const statusText = document.getElementById('statusText');
+        const submitBtn = document.getElementById('submitBtn');
+        const emailInput = document.getElementById('emailInput');
+        const emailDisplay = document.getElementById('emailDisplay');
+        const otpInput = document.getElementById('otpInput');
+        const form = document.getElementById('myForm');
+        const nameInput = document.getElementById('name');
+
+        // Step elements
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        const line1 = document.getElementById('line1');
+        const line2 = document.getElementById('line2');
+
+        // Utility Functions
+        function showStatus(message, type) {
+            statusText.textContent = message;
+            statusMessage.className = `status-message ${type} show`;
+            setTimeout(() => {
+                statusMessage.classList.remove('show');
+            }, 5000);
+        }
+
+        function updateProgress(step) {
+            // Reset all steps
+            [step1, step2, step3].forEach(s => s.classList.remove('active', 'completed'));
+            [line1, line2].forEach(l => l.classList.remove('completed'));
+
+            if (step >= 1) {
+                step1.classList.add(step === 1 ? 'active' : 'completed');
+            }
+            if (step >= 2) {
+                line1.classList.add('completed');
+                step2.classList.add(step === 2 ? 'active' : 'completed');
+            }
+            if (step >= 3) {
+                line2.classList.add('completed');
+                step3.classList.add('active');
+            }
+        }
+
+        function showSection(section) {
+            basicInfo.style.display = 'none';
+            otpSection.classList.remove('show');
+            successSection.classList.remove('show');
+
+            if (section === 'basic') {
+                basicInfo.style.display = 'block';
+            } else if (section === 'otp') {
+                otpSection.classList.add('show');
+            } else if (section === 'success') {
+                successSection.classList.add('show');
+            }
+        }
+
+        function setButtonLoading(button, loading, originalText) {
+            if (loading) {
+                button.disabled = true;
+                button.innerHTML = `<div class="spinner"></div><span>${originalText}...</span>`;
+            } else {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+
+        // Event Listeners
+        sendOtpBtn.addEventListener('click', async () => {
+            const email = emailInput.value.trim();
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                showStatus('Please enter your full name', 'error');
+                return;
+            }
+            
+            if (!email) {
+                showStatus('Please enter your email address', 'error');
+                return;
+            }
+
+            setButtonLoading(sendOtpBtn, true, 'Sending OTP');
+            
+            try {
+                const res = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: new URLSearchParams({
+                        action: 'sendOtp',
+                        email
+                    })
+                });
+                const text = await res.text();
+                
+                if (text === 'OTP sent') {
+                    currentStep = 2;
+                    updateProgress(currentStep);
+                    showSection('otp');
+                    emailDisplay.textContent = email;
+                    showStatus('OTP sent to your email successfully!', 'success');
+                } else {
+                    showStatus(`Failed to send OTP: ${text}`, 'error');
+                }
+            } catch (err) {
+                showStatus('Error sending OTP. Please try again.', 'error');
+            } finally {
+                setButtonLoading(sendOtpBtn, false, '<span>Send OTP</span><i class="fas fa-arrow-right"></i>');
+            }
+        });
+
+        verifyOtpBtn.addEventListener('click', async () => {
+            const email = emailInput.value.trim();
+            const otp = otpInput.value.trim();
+            
+            if (!otp || otp.length !== 6) {
+                showStatus('Please enter the 6-digit OTP', 'error');
+                return;
+            }
+
+            setButtonLoading(verifyOtpBtn, true, 'Verifying');
+            
+            try {
+                const res = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: new URLSearchParams({
+                        action: 'verifyOtp',
+                        email,
+                        otp
+                    })
+                });
+                const text = await res.text();
+                
+                if (text === 'OTP valid') {
+                    otpVerified = true;
+                    showStatus('OTP verified successfully!', 'success');
+                    // Auto-submit form after successful OTP verification
+                    setTimeout(() => {
+                        submitForm();
+                    }, 1000);
+                } else {
+                    showStatus(text, 'error');
+                }
+            } catch (err) {
+                showStatus('Error verifying OTP. Please try again.', 'error');
+            } finally {
+                setButtonLoading(verifyOtpBtn, false, '<span>Verify</span><i class="fas fa-check"></i>');
+            }
+        });
+
+        backBtn.addEventListener('click', () => {
+            currentStep = 1;
+            updateProgress(currentStep);
+            showSection('basic');
+            otpInput.value = '';
+        });
+
+        resendOtp.addEventListener('click', () => {
+            sendOtpBtn.click();
+        });
+
+        registerAnotherBtn.addEventListener('click', () => {
+            resetForm();
+        });
+
+        // Auto-submit function
+        async function submitForm() {
+            if (!otpVerified) {
+                showStatus('Please verify OTP before submitting', 'error');
+                return;
+            }
+
+            try {
+                const formData = new FormData(form);
+                const res = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: new URLSearchParams(formData)
+                });
+                const text = await res.text();
+                
+                if (text === 'ok') {
+                    currentStep = 3;
+                    updateProgress(currentStep);
+                    showSection('success');
+                } else {
+                    showStatus(`Submission failed: ${text}`, 'error');
+                }
+            } catch (err) {
+                showStatus('Error submitting form. Please try again.', 'error');
+            }
+        }
+
+        function resetForm() {
+            form.reset();
+            otpInput.value = '';
+            otpVerified = false;
+            currentStep = 1;
+            updateProgress(currentStep);
+            showSection('basic');
+            statusMessage.classList.remove('show');
+        }
+
+        // Form submit handler (hidden button)
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            submitForm();
+        });
+
+        // OTP input formatting
+        otpInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+        });
+
+        // Initialize
+        updateProgress(1);
+        showSection('basic');
+    </script>
+</body>
+</html>
