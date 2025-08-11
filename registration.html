@@ -551,7 +551,8 @@
     </div>
 
     <script>
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbzdGTXsuajqHwckQwDD4hayyyA3P3KWYs4vW63hNRfSPj0c-UsqW80Zg-QBotatHlgc-Q/exec';
+        // Backend base. If you deploy backend on a different domain, set window.API_BASE
+        const API_BASE = (window.API_BASE && window.API_BASE.replace(/\/$/, '')) || '';
         
         let otpVerified = false;
         let currentStep = 1;
@@ -650,23 +651,21 @@
             setButtonLoading(sendOtpBtn, true, 'Sending OTP');
             
             try {
-                const res = await fetch(scriptURL, {
+                const res = await fetch(`${API_BASE}/api/otp/send`, {
                     method: 'POST',
-                    body: new URLSearchParams({
-                        action: 'sendOtp',
-                        email
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
                 });
-                const text = await res.text();
-                
-                if (text === 'OTP sent') {
+                const data = await res.json();
+                if (res.ok && data && data.ok) {
                     currentStep = 2;
                     updateProgress(currentStep);
                     showSection('otp');
                     emailDisplay.textContent = email;
                     showStatus('OTP sent to your email successfully!', 'success');
                 } else {
-                    showStatus(`Failed to send OTP: ${text}`, 'error');
+                    const msg = (data && (data.error || data.message)) || 'Failed to send OTP';
+                    showStatus(`Failed to send OTP: ${msg}`, 'error');
                 }
             } catch (err) {
                 showStatus('Error sending OTP. Please try again.', 'error');
@@ -687,17 +686,13 @@
             setButtonLoading(verifyOtpBtn, true, 'Verifying');
             
             try {
-                const res = await fetch(scriptURL, {
+                const res = await fetch(`${API_BASE}/api/otp/verify`, {
                     method: 'POST',
-                    body: new URLSearchParams({
-                        action: 'verifyOtp',
-                        email,
-                        otp
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, otp })
                 });
-                const text = await res.text();
-                
-                if (text === 'OTP valid') {
+                const data = await res.json();
+                if (res.ok && data && data.ok) {
                     otpVerified = true;
                     showStatus('OTP verified successfully!', 'success');
                     // Auto-submit form after successful OTP verification
@@ -705,7 +700,8 @@
                         submitForm();
                     }, 1000);
                 } else {
-                    showStatus(text, 'error');
+                    const msg = (data && (data.error || data.message)) || 'Invalid OTP';
+                    showStatus(msg, 'error');
                 }
             } catch (err) {
                 showStatus('Error verifying OTP. Please try again.', 'error');
@@ -737,19 +733,23 @@
             }
 
             try {
-                const formData = new FormData(form);
-                const res = await fetch(scriptURL, {
+                const payload = {
+                    email: emailInput.value.trim(),
+                    fullName: nameInput.value.trim()
+                };
+                const res = await fetch(`${API_BASE}/api/register`, {
                     method: 'POST',
-                    body: new URLSearchParams(formData)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
-                const text = await res.text();
-                
-                if (text === 'ok') {
+                const data = await res.json();
+                if (res.ok && data && data.ok) {
                     currentStep = 3;
                     updateProgress(currentStep);
                     showSection('success');
                 } else {
-                    showStatus(`Submission failed: ${text}`, 'error');
+                    const msg = (data && (data.error || data.message)) || 'Submission failed';
+                    showStatus(`Submission failed: ${msg}`, 'error');
                 }
             } catch (err) {
                 showStatus('Error submitting form. Please try again.', 'error');
