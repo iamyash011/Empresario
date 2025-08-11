@@ -551,17 +551,11 @@
     </div>
 
     <script>
-        // Backend base.
-        // If your API is hosted on a different domain, set it before this script loads:
-        // <script>window.API_BASE = 'https://your-api.example.com'<\/script>
-        // Otherwise, leave blank to use same-origin.
-        const API_BASE = (window.API_BASE && window.API_BASE.replace(/\/$/, '')) || '';
-        
-        // REQUIRED: Configure backend credentials in server/.env
-        // - CORS_ORIGINS: comma-separated list of allowed front-end origins (e.g. https://your-site.github.io)
-        // - EMAIL: set EMAIL_PROVIDER and its credentials (SMTP or SENDGRID) and EMAIL_FROM
-        // - GOOGLE: set GOOGLE_CREDENTIALS_JSON_BASE64 (or GOOGLE_APPLICATION_CREDENTIALS) and SPREADSHEET_ID
-        // See server/.env.example for details.
+        // Google Apps Script Web App URL
+        // 1) Copy the backend code at the bottom of this file into a new Google Apps Script project
+        // 2) Deploy → New deployment → Type: Web app → Execute as: Me → Who has access: Anyone
+        // 3) Paste the deployed Web app URL below
+        const scriptURL = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL';
         
         let otpVerified = false;
         let currentStep = 1;
@@ -660,13 +654,15 @@
             setButtonLoading(sendOtpBtn, true, 'Sending OTP');
             
             try {
-                const res = await fetch(`${API_BASE}/api/otp/send`, {
+                const res = await fetch(scriptURL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
+                    body: new URLSearchParams({
+                        action: 'sendOtp',
+                        email
+                    })
                 });
-                const data = await res.json();
-                if (res.ok && data && data.ok) {
+                const text = await res.text();
+                if (text === 'OTP sent') {
                     currentStep = 2;
                     updateProgress(currentStep);
                     showSection('otp');
@@ -695,13 +691,16 @@
             setButtonLoading(verifyOtpBtn, true, 'Verifying');
             
             try {
-                const res = await fetch(`${API_BASE}/api/otp/verify`, {
+                const res = await fetch(scriptURL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, otp })
+                    body: new URLSearchParams({
+                        action: 'verifyOtp',
+                        email,
+                        otp
+                    })
                 });
-                const data = await res.json();
-                if (res.ok && data && data.ok) {
+                const text = await res.text();
+                if (text === 'OTP valid') {
                     otpVerified = true;
                     showStatus('OTP verified successfully!', 'success');
                     // Auto-submit form after successful OTP verification
@@ -742,17 +741,13 @@
             }
 
             try {
-                const payload = {
-                    email: emailInput.value.trim(),
-                    fullName: nameInput.value.trim()
-                };
-                const res = await fetch(`${API_BASE}/api/register`, {
+                const formData = new FormData(form);
+                const res = await fetch(scriptURL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: new URLSearchParams(formData)
                 });
-                const data = await res.json();
-                if (res.ok && data && data.ok) {
+                const text = await res.text();
+                if (text === 'ok') {
                     currentStep = 3;
                     updateProgress(currentStep);
                     showSection('success');
@@ -790,5 +785,137 @@
         updateProgress(1);
         showSection('basic');
     </script>
+
+    <!--
+    ========================= GOOGLE APPS SCRIPT BACKEND (COPY-PASTE) =========================
+    1) Open https://script.google.com and create a new project
+    2) Replace Code.gs content with the code below
+    3) Set Script properties (File -> Project properties -> Script properties) with:
+       - SHEET_ID              = your Google Sheet ID
+       - SHEET_NAME           = Submissions (or your sheet name)
+       - OTP_TTL_SECONDS      = 600
+       - OTP_MIN_RESEND_SEC   = 60
+       - OTP_MAX_PER_WINDOW   = 5
+       - OTP_WINDOW_SECONDS   = 900
+       - EMAIL_FROM           = "Empresario <noreply@yourdomain.com>"
+       - EMAIL_SUBJECT        = "Your Empresario verification code"
+    4) Deploy → New deployment → Type: Web app → Execute as: Me → Who has access: Anyone
+    5) Copy the Web app URL into scriptURL in this HTML
+
+    // Code.gs
+    const SCRIPT_PROPS = PropertiesService.getScriptProperties();
+
+    function doPost(e) {
+      try {
+        const params = e.parameter || {};
+        const action = params.action;
+        if (!action) return ContentService.createTextOutput('Missing action').setMimeType(ContentService.MimeType.TEXT);
+
+        if (action === 'sendOtp') {
+          return handleSendOtp_(params);
+        }
+        if (action === 'verifyOtp') {
+          return handleVerifyOtp_(params);
+        }
+        // Default: treat as registration submission
+        return handleRegister_(params);
+      } catch (err) {
+        return ContentService.createTextOutput('Error: ' + err).setMimeType(ContentService.MimeType.TEXT);
+      }
+    }
+
+    function handleSendOtp_(params) {
+      const email = (params.email || '').trim();
+      if (!email) return text_('Invalid email');
+
+      const now = Date.now();
+      const store = getStore_();
+      let entry = store[email] || { code: '', expiresAt: 0, lastSentAt: 0, windowStartAt: now, sentCount: 0 };
+
+      // Reset window
+      const windowMs = toInt_(SCRIPT_PROPS.getProperty('OTP_WINDOW_SECONDS'), 900) * 1000;
+      if (now - entry.windowStartAt > windowMs) {
+        entry.windowStartAt = now;
+        entry.sentCount = 0;
+      }
+      const maxPerWindow = toInt_(SCRIPT_PROPS.getProperty('OTP_MAX_PER_WINDOW'), 5);
+      if (entry.sentCount >= maxPerWindow) return text_('Too many OTP requests. Try later.');
+
+      const minResendMs = toInt_(SCRIPT_PROPS.getProperty('OTP_MIN_RESEND_SEC'), 60) * 1000;
+      if (now - entry.lastSentAt < minResendMs) return text_('Please wait before requesting another OTP.');
+
+      const code = generateOtp_(6);
+      const ttlMs = toInt_(SCRIPT_PROPS.getProperty('OTP_TTL_SECONDS'), 600) * 1000;
+      entry.code = code;
+      entry.expiresAt = now + ttlMs;
+      entry.lastSentAt = now;
+      entry.sentCount += 1;
+      store[email] = entry;
+      saveStore_(store);
+
+      const subject = SCRIPT_PROPS.getProperty('EMAIL_SUBJECT') || 'Your verification code';
+      const from = SCRIPT_PROPS.getProperty('EMAIL_FROM') || 'no-reply@example.com';
+      const body = 'Your verification code is ' + code + '. It expires in ' + Math.floor(ttlMs / 60000) + ' minutes.';
+      MailApp.sendEmail({ to: email, subject, htmlBody: body, name: from, noReply: true });
+
+      return text_('OTP sent');
+    }
+
+    function handleVerifyOtp_(params) {
+      const email = (params.email || '').trim();
+      const otp = (params.otp || '').trim();
+      if (!email || !otp) return text_('Invalid payload');
+
+      const store = getStore_();
+      const entry = store[email];
+      if (!entry || !entry.code) return text_('OTP not found. Request a new one.');
+      const now = Date.now();
+      if (now > entry.expiresAt) return text_('OTP expired. Request a new one.');
+      if (String(otp) !== String(entry.code)) return text_('Invalid OTP');
+
+      entry.code = '';
+      store[email] = entry;
+      saveStore_(store);
+      return text_('OTP valid');
+    }
+
+    function handleRegister_(params) {
+      const sheetId = SCRIPT_PROPS.getProperty('SHEET_ID');
+      const sheetName = SCRIPT_PROPS.getProperty('SHEET_NAME') || 'Submissions';
+      if (!sheetId) return text_('Missing SHEET_ID');
+      const ss = SpreadsheetApp.openById(sheetId);
+      const sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+
+      const timestamp = new Date();
+      const row = [
+        Utilities.formatDate(timestamp, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss'),
+        params.email || '',
+        params.name || '',
+        JSON.stringify(params)
+      ];
+      sheet.appendRow(row);
+      return text_('ok');
+    }
+
+    // Simple persistent store using Script Properties (for small scale). For larger scale, use CacheService/Firestore.
+    const STORE_KEY = 'OTP_STORE_JSON_V1';
+    function getStore_() {
+      try { return JSON.parse(SCRIPT_PROPS.getProperty(STORE_KEY) || '{}'); } catch (e) { return {}; }
+    }
+    function saveStore_(obj) {
+      SCRIPT_PROPS.setProperty(STORE_KEY, JSON.stringify(obj));
+    }
+
+    function text_(s) {
+      return ContentService.createTextOutput(String(s)).setMimeType(ContentService.MimeType.TEXT);
+    }
+    function toInt_(v, d) { var n = parseInt(v, 10); return isNaN(n) ? d : n; }
+    function generateOtp_(len) {
+      const digits = '0123456789';
+      let out = '';
+      for (var i = 0; i < len; i++) out += digits[Math.floor(Math.random() * 10)];
+      return out;
+    }
+    -->
 </body>
 </html>
