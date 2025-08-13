@@ -838,7 +838,7 @@
     </div>
     <script>
       const scriptURL =
-        "https://script.google.com/macros/s/AKfycbw27va4hAVqc0TwlkfLA0tdVYTF6W1n2F6gTegh8ERasdNW22j4pb6ElAM5_N5lsVG58g/exec";
+        "https://script.google.com/macros/s/AKfycbydeSUhxPmlH-OLsZW1yBUszPndmJ1UgNXEQhR0s-Q0uh5iRqseh-dTyIS8os5MkAkcbQ/exec";
 
       function createParticles() {
         const particlesContainer = document.getElementById("particles");
@@ -920,8 +920,17 @@
         try {
           const res = await fetch(scriptURL, {
             method: "POST",
+            mode: "cors",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
             body: new URLSearchParams({ action: "register", ...payload }),
           });
+          
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          
           const text = await res.text();
           console.log("Register response:", text);
           if (text.trim().toLowerCase() === "ok") {
@@ -935,7 +944,7 @@
           }
         } catch (err) {
           console.error("Backend submission error:", err);
-          alert("Network / server error. Please try again.");
+          alert("Network / server error: " + err.message + ". Please try again.");
           submitBtn.disabled = false;
           submitBtn.innerHTML = originalBtnText;
         }
@@ -985,21 +994,32 @@
         try {
           const res = await fetch(scriptURL, {
             method: "POST",
+            mode: "cors",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
             body: new URLSearchParams({
               action: "sendOtp",
               email,
             }),
           });
+          
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          
           const text = await res.text();
+          console.log("OTP Response:", text);
           if (text === "OTP sent") {
             otpSection.classList.remove("hidden");
             otpSent = true;
             alert("OTP sent to your email!");
           } else {
-            alert(text);
+            alert("Server response: " + text);
           }
         } catch (e) {
-          alert("Error sending OTP. Please try again.");
+          console.error("OTP Error:", e);
+          alert("Error sending OTP: " + e.message + ". Please try again.");
         }
         validateStep1();
       };
@@ -1047,12 +1067,21 @@
         try {
           const res = await fetch(scriptURL, {
             method: "POST",
+            mode: "cors",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
             body: new URLSearchParams({
               action: "verifyOtp",
               email,
               otp,
             }),
           });
+          
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          
           const text = await res.text();
           if (text === "OTP valid") {
             setTimeout(() => {
@@ -1067,7 +1096,7 @@
             nextBtn.disabled = false;
           }
         } catch (e) {
-          alert("Error verifying OTP. Please try again.");
+          alert("Error verifying OTP: " + e.message + ". Please try again.");
           nextBtn.innerHTML = "Next";
           nextBtn.disabled = false;
         }
